@@ -8,12 +8,18 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/nicholasjackson/env"
+
 	"github.com/acd19ml/gofolder/handlers"
 
 	"github.com/gorilla/mux"
 )
 
+var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
+
 func main() {
+
+	env.Parse()
 	// This is how we create a new instance of our handler
 	// os.Stdout: is a stream that we can write to
 	// "product-api": is a prefix that will appear before any log message
@@ -26,15 +32,25 @@ func main() {
 	// Create a new serve mux and register the handlers
 	sm := mux.NewRouter() //serve mux
 
-	getRouter := sm.Methods("GET").Subrouter() //create a subrouter for GET requests
+	getRouter := sm.Methods(http.MethodGet).Subrouter() //create a subrouter for GET requests
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter() //create a subrouter for PUT requests
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareProductValidation)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter() //create a subrouter for POST requests
+	postRouter.HandleFunc("/", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareProductValidation)
 
 	// Create a new server
-	s := &http.Server{
-		Addr:         ":9090",
+	s := http.Server{
+		Addr:         *bindAddress, //":9090
 		Handler:      sm,
+		ErrorLog:     l,
 		IdleTimeout:  120 * time.Second,
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	// start the server
