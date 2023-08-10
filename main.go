@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/go-openapi/runtime/middleware"
+
 	"github.com/nicholasjackson/env"
 
 	"github.com/acd19ml/gofolder/handlers"
@@ -42,6 +44,16 @@ func main() {
 	postRouter := sm.Methods(http.MethodPost).Subrouter() //create a subrouter for POST requests
 	postRouter.HandleFunc("/", ph.AddProduct)
 	postRouter.Use(ph.MiddlewareProductValidation)
+
+	// deleteRouter := sm.Methods(http.MethodDelete).Subrouter() //create a subrouter for DELETE requests
+	// deleteRouter.HandleFunc("/{id:[0-9]+}", ph.DeleteProducts)
+
+	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
+	sh := middleware.Redoc(opts, nil)
+
+	getRouter.Handle("/docs", sh)
+	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./"))) //serve the swagger.yaml file
+	
 
 	// Create a new server
 	s := http.Server{

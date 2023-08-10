@@ -1,3 +1,19 @@
+// Package handlers classification of Product API
+//
+// Documentation for Product API
+//
+//	Schemes: http
+//	BasePath: /
+//	Version: 1.0.0
+//
+//	Consumes:
+//	- application/json
+//
+//	Produces:
+//	- application/json
+//	swagger:meta
+//
+//	reference:https://goswagger.io/use/spec/meta.html
 package handlers
 
 import (
@@ -11,33 +27,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// A list of products returns in the response
+// swagger:response productsResponse
+type productsResponse struct {
+	// All products in the system
+	// in: body
+	Body []data.Product
+}
+
+// Products is a http.Handler
 type Products struct {
 	l *log.Logger
 }
 
+// NewProducts creates a products handler with the given logger
 func NewProducts(l *log.Logger) *Products {
 	return &Products{l}
-}
-
-// getProducts returns the products from the data store
-func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("Handle GET Product")
-
-	//fetch the products from the datastore
-	lp := data.GetProducts() //list of products
-
-	//serialize the list to JSON
-	err := lp.ToJSON(rw)
-	if err != nil {
-		http.Error(rw, "Unable to marshal json", http.StatusInternalServerError)
-	}
-}
-
-func (p *Products) AddProduct(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("Handle POST Product")
-
-	prod := r.Context().Value(KeyProduct{}).(data.Product)
-	data.AddProduct(&prod)
 }
 
 func (p Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
