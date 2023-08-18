@@ -23,7 +23,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/acd19ml/gofolder/data"
+	"github.com/acd19ml/gofolder/product-api/data"
 )
 
 // KeyProduct is a key used for the Product object in the context

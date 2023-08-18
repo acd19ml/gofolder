@@ -15,7 +15,7 @@
 // swagger:meta
 package handlers
 
-import "github.com/acd19ml/gofolder/data"
+import "github.com/acd19ml/gofolder/product-api/data"
 
 //
 // NOTE: Types defined here are purely for documentation purposes

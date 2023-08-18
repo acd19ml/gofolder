@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/acd19ml/gofolder/data"
+	"github.com/acd19ml/gofolder/product-api/data"
 )
 
 // swagger:route PUT /products products updateProduct

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/acd19ml/gofolder/data"
+	"github.com/acd19ml/gofolder/product-api/data"
 )
 
 // MiddlewareValidateProduct validates the product in the request and calls next if ok

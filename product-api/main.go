@@ -12,11 +12,11 @@ import (
 
 	"github.com/nicholasjackson/env"
 
-	"github.com/acd19ml/gofolder/handlers"
+	"github.com/acd19ml/gofolder/product-api/handlers"
 
 	"github.com/gorilla/mux"
 
-	"github.com/acd19ml/gofolder/data"
+	"github.com/acd19ml/gofolder/product-api/data"
 )
 
 var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
