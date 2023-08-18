@@ -15,6 +15,8 @@ import (
 	"github.com/acd19ml/gofolder/handlers"
 
 	"github.com/gorilla/mux"
+
+	"github.com/acd19ml/gofolder/data"
 )
 
 var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
@@ -22,71 +24,70 @@ var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for t
 func main() {
 
 	env.Parse()
-	// This is how we create a new instance of our handler
-	// os.Stdout: is a stream that we can write to
-	// "product-api": is a prefix that will appear before any log message
-	// log.LstdFlags: is a flag that specifies the logging properties
-	l := log.New(os.Stdout, "product-api", log.LstdFlags) //logger
 
-	// Create the handlers
-	ph := handlers.NewProducts(l) //products handler
+	l := log.New(os.Stdout, "products-api ", log.LstdFlags)
+	v := data.NewValidation()
 
-	// Create a new serve mux and register the handlers
-	sm := mux.NewRouter() //serve mux
+	// create the handlers
+	ph := handlers.NewProducts(l, v)
 
-	getRouter := sm.Methods(http.MethodGet).Subrouter() //create a subrouter for GET requests
-	getRouter.HandleFunc("/", ph.GetProducts)
+	// create a new serve mux and register the handlers
+	sm := mux.NewRouter()
 
-	putRouter := sm.Methods(http.MethodPut).Subrouter() //create a subrouter for PUT requests
-	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
-	putRouter.Use(ph.MiddlewareProductValidation)
+	// handlers for API
+	getR := sm.Methods(http.MethodGet).Subrouter()
+	getR.HandleFunc("/products", ph.ListAll)
+	getR.HandleFunc("/products/{id:[0-9]+}", ph.ListSingle)
 
-	postRouter := sm.Methods(http.MethodPost).Subrouter() //create a subrouter for POST requests
-	postRouter.HandleFunc("/", ph.AddProduct)
-	postRouter.Use(ph.MiddlewareProductValidation)
+	putR := sm.Methods(http.MethodPut).Subrouter()
+	putR.HandleFunc("/products", ph.Update)
+	putR.Use(ph.MiddlewareValidateProduct)
 
-	deleteRouter := sm.Methods(http.MethodDelete).Subrouter() //create a subrouter for DELETE requests
-	deleteRouter.HandleFunc("/{id:[0-9]+}", ph.DeleteProduct)
+	postR := sm.Methods(http.MethodPost).Subrouter()
+	postR.HandleFunc("/products", ph.Create)
+	postR.Use(ph.MiddlewareValidateProduct)
 
+	deleteR := sm.Methods(http.MethodDelete).Subrouter()
+	deleteR.HandleFunc("/products/{id:[0-9]+}", ph.Delete)
+
+	// handler for documentation
 	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
 	sh := middleware.Redoc(opts, nil)
 
-	getRouter.Handle("/docs", sh)
-	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./"))) //serve the swagger.yaml file
-	
+	getR.Handle("/docs", sh)
+	getR.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 
-	// Create a new server
+	// create a new server
 	s := http.Server{
-		Addr:         *bindAddress, //":9090
-		Handler:      sm,
-		ErrorLog:     l,
-		IdleTimeout:  120 * time.Second,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:         *bindAddress,      // configure the bind address
+		Handler:      sm,                // set the default handler
+		ErrorLog:     l,                 // set the logger for the server
+		ReadTimeout:  5 * time.Second,   // max time to read request from the client
+		WriteTimeout: 10 * time.Second,  // max time to write response to the client
+		IdleTimeout:  120 * time.Second, // max time for connections using TCP Keep-Alive
 	}
 
 	// start the server
 	go func() {
+		l.Println("Starting server on port 9090")
+
 		err := s.ListenAndServe()
 		if err != nil {
 			l.Printf("Error starting server: %s\n", err)
-			os.Exit(1) //1: means an error
+			os.Exit(1)
 		}
 	}()
 
-	//This will block until we get a signal
-	//ctrl + c: will send an interrupt signal
-	//'chan': is a channel
-	//'Notify': will notify the channel when we get the specified signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	// trap sigterm or interupt and gracefully shutdown the server
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
 
-	sig := <-sigChan
-	l.Println("Received terminate, graceful shutdown", sig)
+	// Block until a signal is received.
+	sig := <-c
+	log.Println("Got signal:", sig)
 
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	s.Shutdown(tc)
-
-	http.ListenAndServe(":9090", sm)
+	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	s.Shutdown(ctx)
 }

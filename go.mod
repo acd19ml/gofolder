@@ -23,6 +23,7 @@ require (
 	github.com/go-openapi/validate v0.22.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-playground/validator/v10 v10.14.1 // indirect
 	github.com/go-swagger/go-swagger v0.30.5 // indirect
 	github.com/google/uuid v1.3.0 // indirect
